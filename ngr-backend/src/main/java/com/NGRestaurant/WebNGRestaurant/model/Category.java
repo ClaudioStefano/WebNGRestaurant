@@ -18,11 +18,11 @@ public class Category {
     private String name;
 
     private String description;
-
+    //Brand
     @ManyToOne
     @JoinColumn(name = "brand_id")
     private Brand brand;
-
+    //Category
     @OneToMany(mappedBy = "category")
     private List<Product> products;
 }

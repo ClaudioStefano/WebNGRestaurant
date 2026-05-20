@@ -23,6 +23,7 @@ public class Brand {
     @Column(name = "is_active")
     private Boolean isActive;
 
+    //Categories
     @OneToMany(mappedBy = "brand")
     private List<Category> categories;
 }

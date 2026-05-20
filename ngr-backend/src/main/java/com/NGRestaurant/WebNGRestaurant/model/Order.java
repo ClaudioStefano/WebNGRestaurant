@@ -23,11 +23,11 @@ public class Order {
     private Double totalAmount;
 
     private String status;
-
+    //Customer
     @ManyToOne
     @JoinColumn(name = "customer_id")
     private Customer customer;
-
+    //Order
     @OneToMany(mappedBy = "order", cascade = CascadeType.ALL)
     private List<OrderDetail> orderDetails;
 }

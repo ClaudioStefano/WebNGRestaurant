@@ -26,7 +26,7 @@ public class Customer extends User {
     private String password;
 
     private String phone;
-
+    //Customer
     @OneToMany(mappedBy = "customer")
     private List<Order> orders;
 }

@@ -21,6 +21,7 @@ public class Product {
     @Column(name = "is_available")
     private Boolean isAvailable;
 
+    //Product
     @ManyToOne
     @JoinColumn(name = "category_id")
     private Category category;

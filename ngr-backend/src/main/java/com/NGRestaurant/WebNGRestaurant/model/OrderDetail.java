@@ -21,10 +21,11 @@ public class OrderDetail {
 
     private Double subtotal;
 
+    //Order
     @ManyToOne
     @JoinColumn(name = "order_id")
     private Order order;
-
+    //Product
     @ManyToOne
     @JoinColumn(name = "product_id")
     private Product product;
