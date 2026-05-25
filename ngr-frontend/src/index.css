@@ -1,4 +1,4 @@
- *{
+*{
       margin:0;
       padding:0;
       box-sizing:border-box;
@@ -313,6 +313,7 @@
       width:420px;
     }
 
+
     /* =========================
        PROMOS
     ========================= */
@@ -501,6 +502,11 @@
       color:white;
     }
 
+    .active-category{
+     background:#ff6b00;
+     color:white;
+    }
+
     /* =========================
        PRODUCTS
     ========================= */
@@ -597,6 +603,36 @@
       border-radius:28px;
       padding:40px;
     }
+    .close-login{
+  position:absolute;
+
+  top:20px;
+  right:20px;
+
+  width:35px;
+  height:35px;
+
+  border:none;
+
+  border-radius:50%;
+
+  background:#f1f1f1;
+
+  cursor:pointer;
+
+  font-size:18px;
+
+  transition:0.3s;
+}
+
+.close-login:hover{
+  background:#d62828;
+  color:white;
+}
+
+.login-box{
+  position:relative;
+}
 
     .login-box h2{
       font-size:34px;
@@ -623,6 +659,53 @@
       justify-content:center;
       gap:12px;
     }
+
+    /* =========================
+   LOGIN TYPE
+========================= */
+
+.login-type{
+  display:flex;
+  gap:15px;
+  margin-bottom:25px;
+}
+
+.type-btn{
+  flex:1;
+
+  padding:14px;
+
+  border:none;
+
+  border-radius:14px;
+
+  background:#f1f1f1;
+
+  cursor:pointer;
+
+  font-weight:600;
+
+  transition:0.3s;
+
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:10px;
+}
+
+.type-btn:hover{
+  background:#ffe2b0;
+}
+
+.type-btn.active{
+  background:linear-gradient(
+    135deg,
+    #ffc107,
+    #ff6b00
+  );
+
+  color:white;
+}
 
     .google{
       background:#f1f1f1;
@@ -896,3 +979,110 @@
   width:20px;
 }
 
+/* =========================
+   PRIVATE CONTENT
+========================= */
+
+.guest-mode .private-content{
+  opacity:0.5;
+
+  filter:blur(1px);
+
+  pointer-events:none;
+}
+
+
+
+  #privatePage{
+    display:none;
+  }
+
+/* =========================
+   PAGINA PUBLICA
+========================= */
+
+.public-hero{
+  width:100%;
+  height:100vh;
+
+  background-image:url('https://images.unsplash.com/photo-1504674900247-0877df9cc836?q=80&w=1600&auto=format&fit=crop');
+
+  background-size:cover;
+  background-position:center;
+
+  position:relative;
+
+  display:flex;
+  justify-content:center;
+  align-items:center;
+}
+
+.public-overlay{
+  position:absolute;
+  inset:0;
+
+  background:rgba(0,0,0,0.55);
+}
+
+.public-content{
+  position:relative;
+  z-index:2;
+
+  text-align:center;
+  color:white;
+}
+
+.public-logo{
+  width:110px;
+  height:110px;
+
+  border-radius:50%;
+
+  margin:auto;
+  margin-bottom:25px;
+
+  background:linear-gradient(
+    135deg,
+    #ffc107,
+    #ff6b00,
+    #d62828
+  );
+
+  display:flex;
+  justify-content:center;
+  align-items:center;
+
+  font-size:36px;
+  font-weight:700;
+}
+
+.public-content h1{
+  font-size:68px;
+  margin-bottom:20px;
+}
+
+.public-content p{
+  font-size:22px;
+  margin-bottom:35px;
+}
+
+.public-content button{
+  padding:18px 40px;
+
+  border:none;
+
+  border-radius:16px;
+
+  background:linear-gradient(
+    135deg,
+    #ffc107,
+    #ff6b00
+  );
+
+  color:white;
+
+  font-size:18px;
+  font-weight:700;
+
+  cursor:pointer;
+}
