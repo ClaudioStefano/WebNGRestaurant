@@ -142,8 +142,8 @@
   top:80px;
   left:0;
 
-  width:260px;
-  max-height:320px;
+  width:320px;
+  max-height:500px;
 
   overflow-y:auto;
 
@@ -165,11 +165,21 @@
   z-index:1000;
 }
 
-.location-selector:hover .location-dropdown{
-  opacity:1;
-  visibility:visible;
-  transform:translateY(0);
+.location-dropdown::-webkit-scrollbar {
+  width: 6px;
 }
+.location-dropdown::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.02);
+  border-radius: 10px;
+}
+.location-dropdown::-webkit-scrollbar-thumb {
+  background: rgba(255, 107, 0, 0.3);
+  border-radius: 10px;
+}
+.location-dropdown::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 107, 0, 0.6);
+}
+
 
 .city-option{
   padding:16px 20px;

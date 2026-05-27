@@ -54,11 +54,21 @@ const POPULAR_DISHES = [
   { name: "Arroz Chaufa Wok", brand: "China Wok", qty: 12, price: "S/ 22.90", icon: "🥡" }
 ];
 
-function EmployeeDashboard({ userName, statusText, onLogout, productsList, setProductsList }) {
+function EmployeeDashboard({ 
+  userName, 
+  statusText, 
+  onLogout, 
+  productsList, 
+  setProductsList,
+  employeeNotifications = [],
+  setEmployeeNotifications,
+  setUserNotifications
+}) {
   const [activeTab, setActiveTab] = useState('overview'); // 'overview' | 'orders' | 'inventory' | 'reports'
   const [orders, setOrders] = useState(INITIAL_ORDERS);
   const [showToast, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
+  const [showNotifDropdown, setShowNotifDropdown] = useState(false);
   
   // Interactive Innovations
   const [selectedBrandFilter, setSelectedBrandFilter] = useState(null); // Filter popular dishes by clicking brand chart
@@ -72,6 +82,13 @@ function EmployeeDashboard({ userName, statusText, onLogout, productsList, setPr
   const [showEditModal, setShowEditModal] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [newPrice, setNewPrice] = useState('');
+
+  const triggerToast = (message) => {
+    setToastMessage(message);
+    setShowToast(true);
+    setTimeout(() => setShowToast(false), 5000);
+  };
+
 
   // Brand Distribution data (including Dunkin)
   // Bembos (32%), Papa Johns (22%), Popeyes (16%), Dunkin (14%), Don Belisario (10%), China Wok (6%) = 100%
@@ -118,11 +135,18 @@ function EmployeeDashboard({ userName, statusText, onLogout, productsList, setPr
     return () => clearInterval(interval);
   }, []);
 
-  const triggerToast = (message) => {
-    setToastMessage(message);
-    setShowToast(true);
-    setTimeout(() => setShowToast(false), 5000);
-  };
+  // Handle outside click to close notifications and prevent obstruction
+  useEffect(() => {
+    if (!showNotifDropdown) return;
+    const handleOutsideClick = (e) => {
+      if (!e.target.closest('.header-notif')) {
+        setShowNotifDropdown(false);
+      }
+    };
+    document.addEventListener('click', handleOutsideClick);
+    return () => document.removeEventListener('click', handleOutsideClick);
+  }, [showNotifDropdown]);
+
 
   // Move order status flow in Kanban columns
   const advanceOrderStatus = (orderId) => {
@@ -130,18 +154,41 @@ function EmployeeDashboard({ userName, statusText, onLogout, productsList, setPr
       prevOrders.map(order => {
         if (order.id === orderId) {
           let nextStatus = order.status;
+          let notifMsg = "";
+          let notifIcon = "🔔";
           if (order.status === "En Cola") {
             nextStatus = "En Cocina";
             triggerToast(`🍳 Comanda ${order.id} ingresó a preparación en Cocina.`);
+            notifMsg = `🍳 Cocina NGR: Tu comanda ${order.id} (${order.brand}) ha ingresado a preparación activa en cocina.`;
+            notifIcon = "🍳";
           } else if (order.status === "En Cocina") {
             nextStatus = "Listo";
             triggerToast(`📦 Comanda ${order.id} empaquetada. ¡Lista para Enviar!`);
+            notifMsg = `📦 Empaque NGR: Tu comanda ${order.id} (${order.brand}) está lista para ser despachada.`;
+            notifIcon = "📦";
           } else if (order.status === "Listo") {
             nextStatus = "En Camino";
             triggerToast(`🛵 Pedido ${order.id} asignado al Courier y en camino.`);
+            notifMsg = `🛵 Reparto NGR: Tu pedido ${order.id} (${order.brand}) ha sido asignado al motorizado y está en camino.`;
+            notifIcon = "🛵";
           } else if (order.status === "En Camino") {
             nextStatus = "Entregado";
             triggerToast(`✅ Pedido ${order.id} entregado con éxito al cliente.`);
+            notifMsg = `✅ NGR Delivery: Tu comanda ${order.id} (${order.brand}) ha sido entregada con éxito. ¡Buen provecho!`;
+            notifIcon = "✅";
+          }
+          
+          if (notifMsg && setUserNotifications) {
+            setUserNotifications(prev => [
+              {
+                id: Date.now(),
+                text: notifMsg,
+                date: "Hace unos instantes",
+                read: false,
+                icon: notifIcon
+              },
+              ...prev
+            ]);
           }
           return { ...order, status: nextStatus };
         }
@@ -165,6 +212,19 @@ function EmployeeDashboard({ userName, statusText, onLogout, productsList, setPr
         if (p.id === productId) {
           const updatedState = !p.isOutOfStock;
           triggerToast(`📦 "${p.name}" ahora está ${updatedState ? 'Agotado 🛑' : 'Disponible ✅'}.`);
+          
+          if (setUserNotifications) {
+            setUserNotifications(prev => [
+              {
+                id: Date.now(),
+                text: `⚠️ Alerta de Insumos: El plato "${p.name}" (${p.brand}) ahora se encuentra ${updatedState ? 'agotado temporalmente en cocina' : 'disponible nuevamente para compras'}.`,
+                date: "Hace unos instantes",
+                read: false,
+                icon: updatedState ? "⚠️" : "✨"
+              },
+              ...prev
+            ]);
+          }
           return { ...p, isOutOfStock: updatedState };
         }
         return p;
@@ -288,9 +348,92 @@ function EmployeeDashboard({ userName, statusText, onLogout, productsList, setPr
               <span>Turno Operaciones: 24/05/2026</span>
             </div>
             
-            <div className="header-notif" onClick={() => triggerToast("📢 Servidor NGR centralizado: Online y sincronizado.")}>
+            <div 
+              className="header-notif" 
+              onClick={() => setShowNotifDropdown(!showNotifDropdown)}
+              style={{ position: 'relative', cursor: 'pointer' }}
+            >
               <i className="fa-solid fa-bell"></i>
-              <span className="notif-badge"></span>
+              {employeeNotifications.filter(n => !n.read).length > 0 && (
+                <span className="notif-badge"></span>
+              )}
+              
+              {showNotifDropdown && (
+                <div className="notif-dropdown notif-dropdown-box" style={{
+                  position: 'absolute',
+                  top: '40px',
+                  right: '0',
+                  width: '320px',
+                  zIndex: 2000,
+                  padding: '15px',
+                  color: '#1e293b',
+                  textAlign: 'left'
+                }} onClick={(e) => e.stopPropagation()}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px', borderBottom: '1px solid #f1f5f9', paddingBottom: '8px' }}>
+                    <h4 style={{ margin: 0, fontSize: '14px', fontWeight: '800', color: '#ff6b00', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      Notificaciones
+                      {employeeNotifications.filter(n => !n.read).length > 0 && (
+                        <span style={{ fontSize: '10px', background: '#ff6b00', color: 'white', padding: '2px 6px', borderRadius: '10px', fontWeight: 'bold' }}>
+                          {employeeNotifications.filter(n => !n.read).length}
+                        </span>
+                      )}
+                    </h4>
+                    <button 
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setEmployeeNotifications(employeeNotifications.map(n => ({ ...n, read: true })));
+                      }}
+                      style={{ border: 'none', background: 'none', color: '#64748b', fontSize: '11px', fontWeight: '600', cursor: 'pointer' }}
+                    >
+                      Marcar leídas
+                    </button>
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '260px', overflowY: 'auto', paddingRight: '4px' }}>
+                    {employeeNotifications.length === 0 ? (
+                      <div style={{ padding: '20px 0', textAlign: 'center', color: '#94a3b8', fontSize: '12.5px' }}>Sin comunicados de la administración</div>
+                    ) : (
+                      employeeNotifications.map(notif => {
+                        const badgeClass = notif.text.includes("Admin") ? "notif-badge-announcement" :
+                                           notif.text.includes("Corporativo") ? "notif-badge-announcement" :
+                                           notif.text.includes("Sistema") ? "notif-badge-kitchen" : "notif-badge-success";
+                        const badgeLabel = notif.text.includes("Admin") ? "Admin" :
+                                           notif.text.includes("Corporativo") ? "Corporativo" :
+                                           notif.text.includes("Sistema") ? "Sistema" : "Info";
+
+                        return (
+                          <div 
+                            key={notif.id} 
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setEmployeeNotifications(employeeNotifications.map(n => n.id === notif.id ? { ...n, read: true } : n));
+                            }}
+                            className="notif-item-dynamic"
+                            style={{
+                              display: 'flex',
+                              gap: '10px',
+                              padding: '10px',
+                              background: notif.read ? 'transparent' : 'rgba(255, 107, 0, 0.04)',
+                              cursor: 'pointer',
+                              borderLeft: notif.read ? '3px solid transparent' : '3px solid #ff6b00'
+                            }}
+                          >
+                            <div style={{ fontSize: '18px', display: 'flex', alignItems: 'center' }}>{notif.icon}</div>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '3px', flex: 1 }}>
+                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '5px' }}>
+                                <span className={`notif-badge-tag ${badgeClass}`}>{badgeLabel}</span>
+                                <span style={{ fontSize: '9px', color: '#94a3b8' }}>{notif.date}</span>
+                              </div>
+                              <p style={{ margin: 0, fontSize: '11.5px', lineHeight: '1.4', fontWeight: notif.read ? 'normal' : '600', color: '#334155' }}>
+                                {notif.text}
+                              </p>
+                            </div>
+                          </div>
+                        );
+                      })
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </header>

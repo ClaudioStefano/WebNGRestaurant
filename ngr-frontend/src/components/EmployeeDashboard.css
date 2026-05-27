@@ -296,6 +296,8 @@ input:checked + .slider-round:before {
   justify-content: space-between;
   align-items: center;
   margin-bottom: 35px;
+  position: relative;
+  z-index: 1005;
 }
 
 .header-title h1 {

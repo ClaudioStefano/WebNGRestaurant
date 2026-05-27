@@ -57,7 +57,7 @@ const INITIAL_STORES = [
   { id: "L-06", name: "China Wok - San Isidro", brand: "China Wok", manager: "Mario Vega", status: "Abierto", efficiency: "92%" }
 ];
 
-function AdminDashboard({ userName, statusText, onLogout }) {
+function AdminDashboard({ userName, statusText, onLogout, setEmployeeNotifications }) {
   const [activeTab, setActiveTab] = useState('global'); // 'global' | 'settings' | 'stores' | 'employees'
   const [employees, setEmployees] = useState(INITIAL_EMPLOYEES);
   const [stores, setStores] = useState(INITIAL_STORES);
@@ -220,14 +220,7 @@ function AdminDashboard({ userName, statusText, onLogout }) {
               {activeTab === 'employees' && 'Control de Credenciales de Personal'}
             </h1>
             <p>Panel de Administración y Control Central - Nexus Group Restaurants</p>
-          </div>
-
-          <div className="header-actions">
-            <div className="db-sync-tag">
-              <i className="fa-solid fa-rotate"></i>
-              <span>Base de Datos Central: ONLINE</span>
-            </div>
-          </div>
+          </div>          
         </header>
 
         {/* 1. METRICAS GLOBALES */}
@@ -253,15 +246,7 @@ function AdminDashboard({ userName, statusText, onLogout }) {
                 <h2>1,420 pedidos</h2>
                 <p className="kpi-trend"><i className="fa-solid fa-arrow-trend-up"></i> +5.2% efectividad</p>
               </div>
-
-              <div className="kpi-card orange-kpi">
-                <div className="kpi-card-top">
-                  <span>Locales Multi-Marca</span>
-                  <i className="fa-solid fa-house-chimney-medical"></i>
-                </div>
-                <h2>24 locales</h2>
-                <p className="kpi-trend"><i className="fa-solid fa-circle-check"></i> Sincronizados y en línea</p>
-              </div>
+              
 
               <div className="kpi-card gold-kpi">
                 <div className="kpi-card-top">
@@ -295,6 +280,86 @@ function AdminDashboard({ userName, statusText, onLogout }) {
                   <p>La IA predice que la venta de <i>Donut Box</i> aumentará un <b>+15%</b> en horas de la mañana durante los días de invierno. La afinidad de canjes de puntos multimarca es del 85%.</p>
                   <strong className="ai-action-sugg">💡 Sugerencia IA: Configurar promoción cruzada con combos Bembos a las 11:00 AM.</strong>
                 </div>
+              </div>
+            </div>
+
+            {/* ENVIAR COMUNICADO AL PERSONAL DE RESTAURANTES */}
+            <div className="card-panel animate-fade animate-fade-in" style={{ marginTop: '25px', background: 'linear-gradient(135deg, #ffffff, #fffdfb)', border: '1px solid rgba(255, 107, 0, 0.15)', borderRadius: '16px', padding: '20px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '12px' }}>
+                <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: '#fff0e5', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#ff6b00', fontSize: '18px' }}>
+                  <i className="fa-solid fa-bullhorn animate-pulse"></i>
+                </div>
+                <div>
+                  <h3 style={{ margin: 0, fontSize: '16px', fontWeight: '700', color: '#1e293b' }}>📢 Enviar Comunicado Oficial al Personal</h3>
+                  <p className="panel-sub" style={{ margin: 0, fontSize: '12.5px', color: '#64748b' }}>Publica alertas de bioseguridad, logística, o cambios operativos para que se notifiquen en vivo a todos los empleados.</p>
+                </div>
+              </div>
+              
+              <div style={{ display: 'flex', gap: '15px', marginTop: '15px' }}>
+                <input 
+                  type="text" 
+                  id="adminNotifInput" 
+                  placeholder="Escribe el comunicado para el personal (ej: ⚠️ Recordatorio: Capacitación de bioseguridad a las 5:00 PM)" 
+                  style={{
+                    flex: 1,
+                    padding: '12px 18px',
+                    borderRadius: '12px',
+                    border: '1.5px solid #e2e8f0',
+                    fontSize: '13px',
+                    outline: 'none',
+                    transition: 'all 0.2s',
+                    background: '#fffdfb'
+                  }} 
+                  onFocus={(e) => e.target.style.borderColor = '#ff6b00'}
+                  onBlur={(e) => e.target.style.borderColor = '#e2e8f0'}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      const btn = document.getElementById('sendNotifBtn');
+                      if (btn) btn.click();
+                    }
+                  }}
+                />
+                <button 
+                  id="sendNotifBtn"
+                  onClick={() => {
+                    const input = document.getElementById('adminNotifInput');
+                    const text = input ? input.value.trim() : '';
+                    if (!text) {
+                      triggerToast("⚠️ Por favor escribe un comunicado válido");
+                      return;
+                    }
+                    if (setEmployeeNotifications) {
+                      setEmployeeNotifications(prev => [
+                        {
+                          id: Date.now(),
+                          text: `📢 Admin NGR: ${text}`,
+                          date: "Hoy, Justo ahora",
+                          read: false,
+                          icon: "📢"
+                        },
+                        ...prev
+                      ]);
+                      triggerToast("✅ ¡Comunicado enviado con éxito a la consola de empleados!");
+                      if (input) input.value = '';
+                    } else {
+                      triggerToast("⚠️ Error al conectar con el servidor de notificaciones");
+                    }
+                  }}
+                  style={{
+                    padding: '12px 24px',
+                    borderRadius: '12px',
+                    background: 'linear-gradient(135deg, #ff6b00, #ff8c3a)',
+                    color: 'white',
+                    border: 'none',
+                    fontWeight: '600',
+                    fontSize: '13px',
+                    cursor: 'pointer',
+                    boxShadow: '0 4px 12px rgba(255, 107, 0, 0.2)',
+                    transition: 'all 0.2s'
+                  }}
+                >
+                  Enviar Alerta ⚡
+                </button>
               </div>
             </div>
 
