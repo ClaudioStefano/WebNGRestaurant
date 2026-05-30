@@ -1,4 +1,4 @@
 package com.NGRestaurant.WebNGRestaurant.model;
 
-public class Order {
+public class Employee {
 }
