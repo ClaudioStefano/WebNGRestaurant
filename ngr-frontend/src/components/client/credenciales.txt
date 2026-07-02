@@ -1,0 +1,3 @@
+Rol: Cliente (Usuario)
+Correo: alessandrasj@gmail.com
+Contraseña: 123456

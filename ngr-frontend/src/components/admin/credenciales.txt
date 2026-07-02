@@ -1,0 +1,3 @@
+Rol: Administrador
+Correo: admin@ngr.com
+Contraseña: superadmin123

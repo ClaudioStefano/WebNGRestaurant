@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import './AdminDashboard.css';
 
 // Mock Employees registered in NGR platform
@@ -93,6 +93,25 @@ function AdminDashboard({ userName, statusText, onLogout, setEmployeeNotificatio
     setShowToast(true);
     setTimeout(() => setShowToast(false), 4000);
   };
+
+  const [currentDateTime, setCurrentDateTime] = useState(new Date());
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentDateTime(new Date());
+    }, 1000);
+    return () => clearInterval(timer);
+  }, []);
+
+  const formattedDateTime = currentDateTime.toLocaleString('es-PE', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: false
+  });
 
   // Handle Switch payment method
   const handleTogglePayment = (method) => {
@@ -211,7 +230,7 @@ function AdminDashboard({ userName, statusText, onLogout, setEmployeeNotificatio
       <main className="admin-main">
         
         {/* HEADER */}
-        <header className="admin-header">
+        <header className="admin-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div className="header-title">
             <h1>
               {activeTab === 'global' && 'Consola de Métricas Consolidadas'}
@@ -220,7 +239,13 @@ function AdminDashboard({ userName, statusText, onLogout, setEmployeeNotificatio
               {activeTab === 'employees' && 'Control de Credenciales de Personal'}
             </h1>
             <p>Panel de Administración y Control Central - Nexus Group Restaurants</p>
-          </div>          
+          </div>
+          <div className="header-actions">
+            <div className="header-time" style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 15px', borderRadius: '10px', background: '#fff0e5', border: '1px solid rgba(255,107,0,0.15)', color: '#ff6b00', fontSize: '13px', fontWeight: '700' }}>
+              <i className="fa-solid fa-clock"></i>
+              <span>Panel Control: {formattedDateTime}</span>
+            </div>
+          </div>
         </header>
 
         {/* 1. METRICAS GLOBALES */}

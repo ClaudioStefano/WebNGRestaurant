@@ -1,77 +1,67 @@
 package com.NGRestaurant.WebNGRestaurant.service;
 
-import com.NGRestaurant.WebNGRestaurant.dto.CustomerRegisterDTO;
-import com.NGRestaurant.WebNGRestaurant.dto.CustomerResponseDTO;
-import com.NGRestaurant.WebNGRestaurant.mapper.CustomerMapper;
+import com.NGRestaurant.WebNGRestaurant.dto.customer.CustomerRegisterDTO;
+import com.NGRestaurant.WebNGRestaurant.dto.customer.CustomerResponseDTO;
+import com.NGRestaurant.WebNGRestaurant.exception.DuplicateEmailException;
 import com.NGRestaurant.WebNGRestaurant.model.Customer;
 import com.NGRestaurant.WebNGRestaurant.repository.CustomerRepository;
+import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.Date;
-import java.util.List;
-import java.util.stream.Collectors;
+import java.time.LocalDateTime;
 
 @Service
 @RequiredArgsConstructor
-public class CustomerService {
+@Transactional
+public class CustomerService implements InterfaceCustomerService {
 
     private final CustomerRepository customerRepository;
-    private final CustomerMapper customerMapper;
     private final BCryptPasswordEncoder passwordEncoder;
 
-    @Transactional
+    @Override
     public CustomerResponseDTO register(CustomerRegisterDTO dto) {
-        Customer customer = customerMapper.toEntity(dto);
-        customer.setPasswordHash(passwordEncoder.encode(dto.getPassword()));
-        customer.setRegistrationDate(new Date());
-        customer.setIsActive(true);
+        if (customerRepository.findByEmail(dto.getEmail()).isPresent()) {
+            throw new DuplicateEmailException("El email " + dto.getEmail() + " ya se encuentra registrado");
+        }
 
-        Customer saved = customerRepository.save(customer);
-        return customerMapper.toResponseDTO(saved);
-    }
-
-    @Transactional(readOnly = true)
-    public CustomerResponseDTO findById(Long id) {
-        Customer customer = customerRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Customer not found with id: " + id));
-        return customerMapper.toResponseDTO(customer);
-    }
-
-    @Transactional(readOnly = true)
-    public List<CustomerResponseDTO> findAll() {
-        return customerRepository.findByIsActiveTrue()
-                .stream()
-                .map(customerMapper::toResponseDTO)
-                .collect(Collectors.toList());
-    }
-
-    @Transactional
-    public CustomerResponseDTO update(Long id, CustomerRegisterDTO dto) {
-        Customer customer = customerRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Customer not found with id: " + id));
-
+        Customer customer = new Customer();
         customer.setFirstName(dto.getFirstName());
         customer.setLastName(dto.getLastName());
         customer.setEmail(dto.getEmail());
+        customer.setPassword(passwordEncoder.encode(dto.getPassword()));
         customer.setPhone(dto.getPhone());
         customer.setAddress(dto.getAddress());
+        customer.setRegistrationDate(LocalDateTime.now());
+        customer.setIsActive(true);
 
-        if (dto.getPassword() != null && !dto.getPassword().isBlank()) {
-            customer.setPasswordHash(passwordEncoder.encode(dto.getPassword()));
-        }
+        Customer saved = customerRepository.save(customer);
 
-        Customer updated = customerRepository.save(customer);
-        return customerMapper.toResponseDTO(updated);
+        CustomerResponseDTO response = new CustomerResponseDTO();
+        response.setCustomerId(saved.getId());
+        response.setEmail(saved.getEmail());
+        response.setFullName(saved.getFirstName() + " " + saved.getLastName());
+        response.setIsActive(saved.getIsActive());
+        response.setMessage("Cliente registrado exitosamente");
+
+        return response;
     }
 
-    @Transactional
-    public void deactivate(Long id) {
+    @Override
+    @Transactional(readOnly = true)
+    public CustomerResponseDTO findById(Long id) {
         Customer customer = customerRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Customer not found with id: " + id));
-        customer.setIsActive(false);
-        customerRepository.save(customer);
+                .orElseThrow(() -> new EntityNotFoundException("Cliente con id " + id + " no encontrado"));
+
+        CustomerResponseDTO response = new CustomerResponseDTO();
+        response.setCustomerId(customer.getId());
+        response.setEmail(customer.getEmail());
+        response.setFullName(customer.getFirstName() + " " + customer.getLastName());
+        response.setIsActive(customer.getIsActive());
+        response.setMessage("Cliente encontrado");
+
+        return response;
     }
 }

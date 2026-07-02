@@ -1,0 +1,3 @@
+Rol: Empleado (Colaborador)
+Correo: CN133@ngr.com
+Contraseña: admin123

@@ -1,103 +1,84 @@
 package com.NGRestaurant.WebNGRestaurant.service;
 
-import com.NGRestaurant.WebNGRestaurant.dto.*;
+import com.NGRestaurant.WebNGRestaurant.dto.inventory.InventoryResponseDTO;
+import com.NGRestaurant.WebNGRestaurant.dto.inventory.StockCheckRequestDTO;
+import com.NGRestaurant.WebNGRestaurant.dto.inventory.StockUpdateRequestDTO;
 import com.NGRestaurant.WebNGRestaurant.exception.InsufficientStockException;
-import com.NGRestaurant.WebNGRestaurant.mapper.InventoryMapper;
 import com.NGRestaurant.WebNGRestaurant.model.Inventory;
 import com.NGRestaurant.WebNGRestaurant.repository.InventoryRepository;
+import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.Date;
-import java.util.List;
-import java.util.stream.Collectors;
+import java.time.LocalDateTime;
 
 @Service
 @RequiredArgsConstructor
-public class InventoryService {
+@Transactional
+public class InventoryService implements InterfaceInventoryService {
+
+    private static final int REORDER_THRESHOLD = 5;
 
     private final InventoryRepository inventoryRepository;
-    private final InventoryMapper inventoryMapper;
 
-    @Transactional
-    public InventoryResponseDTO create(InventoryRegisterDTO dto) {
-        Inventory inventory = inventoryMapper.toEntity(dto);
-        inventory.setLastUpdate(new Date());
-
-        Inventory saved = inventoryRepository.save(inventory);
-        return inventoryMapper.toResponseDTO(saved);
-    }
-
+    @Override
     @Transactional(readOnly = true)
-    public InventoryResponseDTO findById(Long id) {
-        Inventory inventory = inventoryRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Inventory not found with id: " + id));
-        return inventoryMapper.toResponseDTO(inventory);
-    }
+    public InventoryResponseDTO checkStockAvailability(StockCheckRequestDTO request) {
+        InventoryResponseDTO response = new InventoryResponseDTO();
+        response.setProductId(request.getProductId());
 
-    @Transactional(readOnly = true)
-    public List<InventoryResponseDTO> findAll() {
-        return inventoryRepository.findAll()
-                .stream()
-                .map(inventoryMapper::toResponseDTO)
-                .collect(Collectors.toList());
-    }
+        Inventory inventory = inventoryRepository.findByProductId(request.getProductId()).orElse(null);
 
-    @Transactional(readOnly = true)
-    public InventoryResponseDTO findByProductId(Long productId) {
-        Inventory inventory = inventoryRepository.findByProductId(productId)
-                .orElseThrow(() -> new RuntimeException("Inventory not found for productId: " + productId));
-        return inventoryMapper.toResponseDTO(inventory);
-    }
+        if (inventory == null) {
+            response.setCurrentStock(0);
+            response.setIsAvailable(false);
+            response.setMessage("Producto no encontrado en inventario");
+            return response;
+        }
 
-    @Transactional(readOnly = true)
-    public InventoryResponseDTO checkAvailability(StockCheckRequestDTO dto) {
-        Inventory inventory = inventoryRepository.findByProductId(dto.getProductId())
-                .orElseThrow(() -> new RuntimeException("Inventory not found for productId: " + dto.getProductId()));
+        response.setCurrentStock(inventory.getStock());
+        boolean available = inventory.getStock() >= request.getQuantity();
+        response.setIsAvailable(available);
 
-        InventoryResponseDTO response = inventoryMapper.toResponseDTO(inventory);
-        response.setIsAvailable(inventory.getStock() >= dto.getQuantity());
-        response.setMessage(inventory.getStock() >= dto.getQuantity()
-                ? "Stock suficiente: " + inventory.getStock() + " disponibles para las " + dto.getQuantity() + " solicitadas"
-                : "Stock insuficiente: " + inventory.getStock() + " disponibles, se requieren " + dto.getQuantity());
+        if (available) {
+            response.setMessage("Stock disponible");
+        } else {
+            response.setMessage("Stock insuficiente: disponible " + inventory.getStock()
+                    + ", solicitado " + request.getQuantity());
+        }
+
         return response;
     }
 
-    @Transactional
-    public InventoryResponseDTO deductStock(StockUpdateDTO dto) {
-        Inventory inventory = inventoryRepository.findByProductIdWithLock(dto.getProductId())
-                .orElseThrow(() -> new RuntimeException("Inventory not found for productId: " + dto.getProductId()));
+    @Override
+    public InventoryResponseDTO reduceStock(StockUpdateRequestDTO request) {
+        Inventory inventory = inventoryRepository.findByProductId(request.getProductId())
+                .orElseThrow(() -> new EntityNotFoundException(
+                        "Producto con id " + request.getProductId() + " no encontrado en inventario"));
 
-        if (inventory.getStock() < dto.getQuantityToDeduct()) {
+        if (inventory.getStock() < request.getQuantityToDeduct()) {
             throw new InsufficientStockException(
-                    dto.getProductId(), dto.getQuantityToDeduct(), inventory.getStock());
+                    "Stock insuficiente para el producto " + request.getProductId()
+                            + ": disponible " + inventory.getStock()
+                            + ", solicitado " + request.getQuantityToDeduct());
         }
 
-        inventory.setStock(inventory.getStock() - dto.getQuantityToDeduct());
-        inventory.setLastUpdate(new Date());
+        inventory.setStock(inventory.getStock() - request.getQuantityToDeduct());
+        inventory.setLastUpdate(LocalDateTime.now());
+        inventoryRepository.save(inventory);
 
-        Inventory saved = inventoryRepository.save(inventory);
-        return inventoryMapper.toResponseDTO(saved);
-    }
+        InventoryResponseDTO response = new InventoryResponseDTO();
+        response.setProductId(request.getProductId());
+        response.setCurrentStock(inventory.getStock());
+        response.setIsAvailable(true);
 
-    @Transactional
-    public InventoryResponseDTO updateStock(Long id, Integer stock) {
-        Inventory inventory = inventoryRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Inventory not found with id: " + id));
-
-        inventory.setStock(stock);
-        inventory.setLastUpdate(new Date());
-
-        Inventory saved = inventoryRepository.save(inventory);
-        return inventoryMapper.toResponseDTO(saved);
-    }
-
-    @Transactional
-    public void delete(Long id) {
-        if (!inventoryRepository.existsById(id)) {
-            throw new RuntimeException("Inventory not found with id: " + id);
+        if (inventory.getStock() < REORDER_THRESHOLD) {
+            response.setMessage("Stock actualizado exitosamente | Alerta Predictiva de Reabastecimiento: stock por debajo del umbral crítico (" + REORDER_THRESHOLD + " unidades)");
+        } else {
+            response.setMessage("Stock actualizado exitosamente");
         }
-        inventoryRepository.deleteById(id);
+
+        return response;
     }
 }

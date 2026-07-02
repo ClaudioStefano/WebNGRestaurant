@@ -1,66 +1,34 @@
 package com.NGRestaurant.WebNGRestaurant.controller;
 
-import com.NGRestaurant.WebNGRestaurant.dto.*;
-import com.NGRestaurant.WebNGRestaurant.service.InventoryService;
+import com.NGRestaurant.WebNGRestaurant.dto.inventory.InventoryResponseDTO;
+import com.NGRestaurant.WebNGRestaurant.dto.inventory.StockCheckRequestDTO;
+import com.NGRestaurant.WebNGRestaurant.dto.inventory.StockUpdateRequestDTO;
+import com.NGRestaurant.WebNGRestaurant.service.InterfaceInventoryService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("/api/inventories")
 @RequiredArgsConstructor
 public class InventoryController {
 
-    private final InventoryService inventoryService;
-
-    @PostMapping
-    public ResponseEntity<InventoryResponseDTO> create(@RequestBody InventoryRegisterDTO dto) {
-        InventoryResponseDTO response = inventoryService.create(dto);
-        return ResponseEntity.status(HttpStatus.CREATED).body(response);
-    }
-
-    @GetMapping
-    public ResponseEntity<List<InventoryResponseDTO>> getAll() {
-        List<InventoryResponseDTO> inventories = inventoryService.findAll();
-        return ResponseEntity.ok(inventories);
-    }
-
-    @GetMapping("/{id}")
-    public ResponseEntity<InventoryResponseDTO> getById(@PathVariable Long id) {
-        InventoryResponseDTO response = inventoryService.findById(id);
-        return ResponseEntity.ok(response);
-    }
-
-    @GetMapping("/product/{productId}")
-    public ResponseEntity<InventoryResponseDTO> getByProductId(@PathVariable Long productId) {
-        InventoryResponseDTO response = inventoryService.findByProductId(productId);
-        return ResponseEntity.ok(response);
-    }
+    private final InterfaceInventoryService inventoryService;
 
     @PostMapping("/check")
-    public ResponseEntity<InventoryResponseDTO> checkAvailability(@RequestBody StockCheckRequestDTO dto) {
-        InventoryResponseDTO response = inventoryService.checkAvailability(dto);
+    public ResponseEntity<InventoryResponseDTO> checkStock(@Valid @RequestBody StockCheckRequestDTO request) {
+        InventoryResponseDTO response = inventoryService.checkStockAvailability(request);
         return ResponseEntity.ok(response);
     }
 
-    @PutMapping("/deduct")
-    public ResponseEntity<InventoryResponseDTO> deductStock(@RequestBody StockUpdateDTO dto) {
-        InventoryResponseDTO response = inventoryService.deductStock(dto);
+    @PutMapping("/reduce")
+    public ResponseEntity<InventoryResponseDTO> reduceStock(@Valid @RequestBody StockUpdateRequestDTO request) {
+        InventoryResponseDTO response = inventoryService.reduceStock(request);
         return ResponseEntity.ok(response);
-    }
-
-    @PutMapping("/{id}")
-    public ResponseEntity<InventoryResponseDTO> updateStock(@PathVariable Long id, @RequestBody Integer stock) {
-        InventoryResponseDTO response = inventoryService.updateStock(id, stock);
-        return ResponseEntity.ok(response);
-    }
-
-    @DeleteMapping("/{id}")
-    public ResponseEntity<Void> delete(@PathVariable Long id) {
-        inventoryService.delete(id);
-        return ResponseEntity.noContent().build();
     }
 }

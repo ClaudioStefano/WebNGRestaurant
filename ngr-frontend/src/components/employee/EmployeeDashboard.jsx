@@ -89,6 +89,25 @@ function EmployeeDashboard({
     setTimeout(() => setShowToast(false), 5000);
   };
 
+  const [currentDateTime, setCurrentDateTime] = useState(new Date());
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentDateTime(new Date());
+    }, 1000);
+    return () => clearInterval(timer);
+  }, []);
+
+  const formattedDateTime = currentDateTime.toLocaleString('es-PE', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: false
+  });
+
 
   // Brand Distribution data (including Dunkin)
   // Bembos (32%), Papa Johns (22%), Popeyes (16%), Dunkin (14%), Don Belisario (10%), China Wok (6%) = 100%
@@ -345,7 +364,7 @@ function EmployeeDashboard({
           <div className="header-actions">
             <div className="header-time">
               <i className="fa-solid fa-clock-rotate-left"></i>
-              <span>Turno Operaciones: 24/05/2026</span>
+              <span>Turno Operaciones: {formattedDateTime}</span>
             </div>
             
             <div 
